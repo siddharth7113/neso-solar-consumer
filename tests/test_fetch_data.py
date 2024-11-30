@@ -72,9 +72,3 @@ def test_data_consistency():
     assert df_api.equals(
         df_sql
     ), "Data from fetch_data and fetch_data_using_sql are inconsistent!"
-
-
-if __name__ == "__main__":
-    test_fetch_data_api()
-    test_fetch_data_sql()
-    test_data_consistency()
