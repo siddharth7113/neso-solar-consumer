@@ -16,3 +16,6 @@ dist/
 
 # Logs
 *.log
+
+# Ruff Cache
+.ruff_cache/
