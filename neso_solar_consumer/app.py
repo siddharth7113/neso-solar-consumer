@@ -14,7 +14,7 @@ Functions:
     - save_forecast: Saves the formatted forecast data (placeholder for now).
 """
 
-from fetch_data import fetch_data
+from .fetch_data import fetch_data
 
 
 def get_forecast():
