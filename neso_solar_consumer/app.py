@@ -6,8 +6,6 @@ This script orchestrates the following steps:
 2. Formats the forecast data (currently a placeholder for future enhancements).
 3. Saves the forecast data (currently a placeholder for future enhancements).
 
-Each step is modularized into functions to allow for testing and future extension.
-
 Functions:
     - get_forecast: Fetches raw solar forecast data.
     - format_forecast: Processes the forecast data for a specific format (placeholder for now).
@@ -77,7 +75,7 @@ def save_forecast(data):
     # Future implementation will save data to a database or file.
 
 
-if __name__ == "__main__":
+def main():
     """
     Orchestrates the following steps:
         1. Fetch forecast data.
@@ -97,3 +95,7 @@ if __name__ == "__main__":
     save_forecast(formatted_data)
 
     print("Process completed successfully!")
+
+
+if __name__ == "__main__":
+    main()
