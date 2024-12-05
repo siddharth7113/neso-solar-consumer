@@ -24,6 +24,24 @@
       "contributions": [
         "code"
       ]
+    },
+    {
+      "login": "siddharth7113",
+      "name": "Siddharth",
+      "avatar_url": "https://avatars.githubusercontent.com/u/114160268?v=4",
+      "profile": "http://siddharth7113.github.io",
+      "contributions": [
+        "review"
+      ]
+    },
+    {
+      "login": "Conor0Callaghan",
+      "name": "Conor O Callaghan",
+      "avatar_url": "https://avatars.githubusercontent.com/u/4090256?v=4",
+      "profile": "https://github.com/Conor0Callaghan",
+      "contributions": [
+        "doc"
+      ]
     }
   ],
   "contributorsPerLine": 7,
