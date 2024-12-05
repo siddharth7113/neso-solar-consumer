@@ -14,7 +14,6 @@ jobs:
     with:
       # pytest-cov looks at this folder
       pytest_cov_dir: "."
-      pytest_args: "--cov=my_project --cov-report=term"
       os_list: '["ubuntu-latest"]'
       python-version: "['3.11']"
       pytest_numcpus: '1'
