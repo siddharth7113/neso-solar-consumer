@@ -27,7 +27,7 @@ To run tests matching a specific pattern, use the -k option:
 """
 
 import pytest
-from fetch_data import fetch_data, fetch_data_using_sql
+from neso_solar_consumer.fetch_data import fetch_data, fetch_data_using_sql
 
 
 resource_id = "db6c038f-98af-4570-ab60-24d71ebd0ae5"
