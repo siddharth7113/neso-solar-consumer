@@ -8,7 +8,6 @@ on:
     - cron: "0 12 * * 1"
   pull_request_target:
     types: [opened, synchronize, reopened, ready_for_review]
-
 jobs:
   call-run-python-tests:
     uses: openclimatefix/.github/.github/workflows/python-test.yml@issue/pip-all
@@ -18,8 +17,3 @@ jobs:
       os_list: '["ubuntu-latest"]'
       python-version: "['3.11']"
       pytest_numcpus: '1'
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v2
-      - name: Install dependencies
-        run: pip install .[dev]  # Install with dev dependencies
