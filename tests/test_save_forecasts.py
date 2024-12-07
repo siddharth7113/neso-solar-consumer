@@ -26,6 +26,7 @@ RENAME_COLUMNS = {
 MODEL_NAME = "real_data_model"
 MODEL_VERSION = "1.0"
 
+
 @pytest.fixture
 def db_session():
     """
@@ -43,6 +44,7 @@ def db_session():
 
     session.close()
     engine.dispose()
+
 
 def test_save_real_forecasts(db_session):
     """

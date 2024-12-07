@@ -35,7 +35,7 @@ def format_to_forecast_sql(data: pd.DataFrame, model_tag: str, model_version: st
         forecast_values = [
             ForecastValue(
                 target_time=target_time,
-                expected_power_generation_megawatts=row["solar_forecast_kw"]
+                expected_power_generation_megawatts=row["solar_forecast_kw"],
             ).to_orm()
         ]
 
