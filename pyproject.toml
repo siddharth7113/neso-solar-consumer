@@ -6,10 +6,10 @@ build-backend = "setuptools.build_meta"
 name = "neso_solar_consumer"
 version = "0.1"
 dependencies = [
-    "pandas",
+    "pandas"
 ]
 
 [project.optional-dependencies]
 dev = [
-    "pytest"
+    "pytest","black","ruff"
 ]
