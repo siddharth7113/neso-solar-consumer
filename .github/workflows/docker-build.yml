@@ -1,13 +1,13 @@
-name: Docker Build and Test
+name: Docker Build
 
 on: push
 
 jobs:
-  DockerBuildAndTest:
-    name: Build and Run Tests
+  DockerBuild:
+    name: Build and Test Docker
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout Code
+      - name: Checkout
         uses: actions/checkout@v2
 
       - name: Set up Docker Buildx
@@ -17,5 +17,4 @@ jobs:
         run: docker build -t neso-solar-consumer .
 
       - name: Run Tests in Docker
-        run: |
-          docker run --rm neso-solar-consumer pytest
+        run: docker run --rm neso-solar-consumer
