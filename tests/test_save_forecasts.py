@@ -5,7 +5,6 @@ This script validates the integration of fetching real data, formatting it into 
 and saving it to the database.
 """
 
-import pytest
 from nowcasting_datamodel.models import ForecastSQL
 from neso_solar_consumer.fetch_data import fetch_data
 from neso_solar_consumer.format_forecast import format_to_forecast_sql
