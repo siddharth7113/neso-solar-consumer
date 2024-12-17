@@ -3,14 +3,18 @@ FROM python:3.12-slim
 # Set working directory
 WORKDIR /app
 
-# Install dependencies from pyproject.toml
-COPY pyproject.toml /app
+# Install build tools and dependencies
+RUN pip install --upgrade pip setuptools wheel
 
-# Install core and development dependencies
+# Copy the pyproject.toml and install the project (including dev dependencies)
+COPY pyproject.toml /app
 RUN pip install --no-cache-dir ".[dev]"
 
-# Copy the source code
+# Copy the entire project
 COPY . /app
 
-# Default command for running pytest
+# Install the package in editable mode (if needed for testing)
+RUN pip install --no-cache-dir -e .
+
+# Set the default command to run tests
 CMD ["pytest", "tests/"]

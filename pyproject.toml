@@ -11,5 +11,10 @@ dependencies = [
 
 [project.optional-dependencies]
 dev = [
-    "pytest", "black", "ruff","testcontainers"
+    "pytest", 
+    "pytest-cov", 
+    "pytest-xdist", 
+    "black", 
+    "ruff",
+    "testcontainers"
 ]
