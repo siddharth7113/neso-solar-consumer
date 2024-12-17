@@ -67,9 +67,5 @@ def format_to_forecast_sql(data: pd.DataFrame, model_tag: str, model_version: st
     )
     logger.debug(f"ForecastSQL Object Created: {forecast}")
 
-    # Step 6: Add to session and flush
-    session.add(forecast)
-    session.flush()
     logger.info("ForecastSQL object successfully added to session and flushed.")
-
     return [forecast]
