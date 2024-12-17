@@ -1,3 +1,30 @@
+"""
+Test Suite for `fetch_data` and `fetch_data_using_sql` Functions
+
+This script contains tests to validate the functionality and consistency of two data-fetching functions: 
+`fetch_data` (via API) and `fetch_data_using_sql` (via SQL query). It checks that the data returned 
+by both methods is correctly processed, contains the expected columns, and ensures the consistency 
+between the two methods.
+
+### How to Run the Tests:
+
+You can run the entire suite of tests in this file using `pytest` from the command line:
+   
+    pytest tests/test_fetch_data.py
+
+To run a specific test, you can specify the function name:
+
+    pytest tests/test_fetch_data.py::test_fetch_data_api
+
+For verbose output, use the -v flag:
+
+    pytest tests/test_fetch_data.py -v
+
+To run tests matching a specific pattern, use the -k option:
+
+    pytest tests/test_fetch_data.py -k "fetch_data"
+
+"""
 from neso_solar_consumer.fetch_data import fetch_data, fetch_data_using_sql
 
 
