@@ -12,7 +12,7 @@ logger = logging.getLogger(__name__)
 
 def format_to_forecast_sql(data: pd.DataFrame, model_tag: str, model_version: str, session) -> list:
     """
-    Convert NESO solar forecast data into a single ForecastSQL object.
+    Convert NESO solar forecast data into a ForecastSQL object.
 
     Args:
         data (pd.DataFrame): Input DataFrame with forecast data.
@@ -21,7 +21,7 @@ def format_to_forecast_sql(data: pd.DataFrame, model_tag: str, model_version: st
         session: SQLAlchemy session for database access.
 
     Returns:
-        list: A list containing one ForecastSQL object.
+        list: A list containing ForecastSQL objects.
     """
     logger.info("Starting format_to_forecast_sql process...")
 
@@ -44,7 +44,16 @@ def format_to_forecast_sql(data: pd.DataFrame, model_tag: str, model_version: st
             logger.debug("Skipping row due to missing data")
             continue
 
-        target_time = datetime.fromisoformat(row["start_utc"]).replace(tzinfo=timezone.utc)
+        # Convert start_utc to a datetime object (handle both strings and datetime)
+        if isinstance(row["start_utc"], datetime):
+            target_time = row["start_utc"]
+        else:
+            try:
+                target_time = datetime.fromisoformat(row["start_utc"]).replace(tzinfo=timezone.utc)
+            except ValueError:
+                logger.warning(f"Invalid datetime format in row: {row['start_utc']}. Skipping.")
+                continue
+
         forecast_value = ForecastValue(
             target_time=target_time,
             expected_power_generation_megawatts=row["solar_forecast_kw"],
@@ -56,7 +65,7 @@ def format_to_forecast_sql(data: pd.DataFrame, model_tag: str, model_version: st
         logger.warning("No valid forecast values found in the data. Exiting.")
         return []
 
-    # Step 5: Create a single ForecastSQL object
+    # Step 5: Create a ForecastSQL object
     forecast = ForecastSQL(
         model=model,
         forecast_creation_time=datetime.now(tz=timezone.utc),
@@ -67,5 +76,5 @@ def format_to_forecast_sql(data: pd.DataFrame, model_tag: str, model_version: st
     )
     logger.debug(f"ForecastSQL Object Created: {forecast}")
 
-    logger.info("ForecastSQL object successfully added to session and flushed.")
+    logger.info("ForecastSQL object successfully created and returned.")
     return [forecast]
