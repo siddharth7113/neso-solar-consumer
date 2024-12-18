@@ -4,9 +4,9 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from nowcasting_datamodel.models.base import Base_Forecast
 from nowcasting_datamodel.models import MLModelSQL
+from testcontainers.postgres import PostgresContainer
 
 # Shared Test Configuration Constants
-TEST_DB_URL = "postgresql://postgres:12345@localhost/testdb"
 RESOURCE_ID = "db6c038f-98af-4570-ab60-24d71ebd0ae5"
 LIMIT = 5
 COLUMNS = ["DATE_GMT", "TIME_GMT", "EMBEDDED_SOLAR_FORECAST"]
@@ -19,21 +19,38 @@ MODEL_NAME = "real_data_model"
 MODEL_VERSION = "1.0"
 
 
+@pytest.fixture(scope="session")
+def postgres_container():
+    """
+    Fixture to spin up a PostgreSQL container for the entire test session.
+
+    This fixture uses `testcontainers` to start a fresh PostgreSQL container and provides
+    the connection URL dynamically for use in other fixtures.
+    """
+    with PostgresContainer("postgres:15.5") as postgres:
+        postgres.start()
+        yield postgres.get_connection_url()
+
+
 @pytest.fixture(scope="function")
-def db_session() -> Generator:
+def db_session(postgres_container) -> Generator:
     """
     Fixture to set up and tear down a PostgreSQL database session for testing.
 
     This fixture:
+    - Connects to the PostgreSQL container provided by `postgres_container`.
     - Creates a fresh database schema before each test.
     - Adds a dummy ML model for test purposes.
     - Tears down the database session and cleans up resources after each test.
 
+    Args:
+        postgres_container (str): The dynamic connection URL provided by PostgresContainer.
+
     Returns:
         Generator: A SQLAlchemy session object.
     """
-    # Create database engine and tables
-    engine = create_engine(TEST_DB_URL)
+    # Use the dynamic connection URL
+    engine = create_engine(postgres_container)
     Base_Forecast.metadata.drop_all(engine)  # Drop all tables to ensure a clean slate
     Base_Forecast.metadata.create_all(engine)  # Recreate the tables
 
