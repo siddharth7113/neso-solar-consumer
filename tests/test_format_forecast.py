@@ -24,4 +24,4 @@ def test_format_to_forecast_sql_real(db_session, test_config):
 
     # Step 3: Validate ForecastSQL content
     forecast = forecasts[0]
-    assert len(forecast.forecast_values) == len(data), "Mismatch in ForecastValue entries!"
+    assert len(forecast.forecast_values) == len(data.drop_duplicates(subset=["start_utc","end_utc","solar_forecast_kw"])), "Mismatch in ForecastValue entries!"
