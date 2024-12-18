@@ -36,7 +36,7 @@ TODO
 
 ## Contributing and community
 
-[![issues badge](https://img.shields.io/github/issues/openclimatefix/ocf-template?color=FFAC5F)](https://github.com/openclimatefix/ocf-template/issues?q=is%3Aissue+is%3Aopen+sort%3Aupdated-desc)
+[![issues badge](https://img.shields.io/github/issues/openclimatefix/neso-solar-consumer?color=FFAC5F)](https://github.com/openclimatefix/neso-solar-consumer/issues?q=is%3Aissue+is%3Aopen+sort%3Aupdated-desc)
 
 - PR's are welcome! See the [Organisation Profile](https://github.com/openclimatefix) for details on contributing
 - Find out about our other projects in the [OCF Meta Repo](https://github.com/openclimatefix/ocf-meta-repo)
