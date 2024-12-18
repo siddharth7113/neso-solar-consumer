@@ -37,7 +37,16 @@ def format_to_forecast_sql(data: pd.DataFrame, model_tag: str, model_version: st
     location = get_location(session=session, gsp_id=0)
     logger.debug(f"Location Retrieved or Created: {location}")
 
-    # Step 4: Process rows into ForecastValue objects
+    # Step 4: Deduplicate data to avoid database conflicts
+    initial_row_count = len(data)
+    data = data.drop_duplicates(subset=["start_utc", "solar_forecast_kw"])
+    deduplicated_row_count = len(data)
+
+    logger.info(
+        f"Removed {initial_row_count - deduplicated_row_count} duplicate rows based on 'start_utc' and 'solar_forecast_kw'."
+    )
+
+    # Step 5: Process rows into ForecastValue objects
     forecast_values = []
     for _, row in data.iterrows():
         if pd.isnull(row["start_utc"]) or pd.isnull(row["solar_forecast_kw"]):
@@ -65,7 +74,7 @@ def format_to_forecast_sql(data: pd.DataFrame, model_tag: str, model_version: st
         logger.warning("No valid forecast values found in the data. Exiting.")
         return []
 
-    # Step 5: Create a ForecastSQL object
+    # Step 6: Create a ForecastSQL object
     forecast = ForecastSQL(
         model=model,
         forecast_creation_time=datetime.now(tz=timezone.utc),
