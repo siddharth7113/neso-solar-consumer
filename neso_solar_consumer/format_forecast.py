@@ -2,15 +2,22 @@ import logging
 from datetime import datetime, timezone
 import pandas as pd
 from nowcasting_datamodel.models import ForecastSQL, ForecastValue
-from nowcasting_datamodel.read.read import get_latest_input_data_last_updated, get_location
+from nowcasting_datamodel.read.read import (
+    get_latest_input_data_last_updated,
+    get_location,
+)
 from nowcasting_datamodel.read.read_models import get_model
 
 # Configure logging (set to INFO for production; use DEBUG during debugging)
-logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
+logging.basicConfig(
+    level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s"
+)
 logger = logging.getLogger(__name__)
 
 
-def format_to_forecast_sql(data: pd.DataFrame, model_tag: str, model_version: str, session) -> list:
+def format_to_forecast_sql(
+    data: pd.DataFrame, model_tag: str, model_version: str, session
+) -> list:
     logger.info("Starting format_to_forecast_sql process...")
 
     # Step 1: Retrieve model metadata
@@ -28,14 +35,19 @@ def format_to_forecast_sql(data: pd.DataFrame, model_tag: str, model_version: st
             continue
 
         try:
-            target_time = datetime.fromisoformat(row["start_utc"]).replace(tzinfo=timezone.utc)
+            target_time = datetime.fromisoformat(row["start_utc"]).replace(
+                tzinfo=timezone.utc
+            )
         except ValueError:
-            logger.warning(f"Invalid datetime format: {row['start_utc']}. Skipping row.")
+            logger.warning(
+                f"Invalid datetime format: {row['start_utc']}. Skipping row."
+            )
             continue
 
         forecast_value = ForecastValue(
             target_time=target_time,
-            expected_power_generation_megawatts=row["solar_forecast_kw"] / 1000,  # Convert to MW
+            expected_power_generation_megawatts=row["solar_forecast_kw"]
+            / 1000,  # Convert to MW
         ).to_orm()
         forecast_values.append(forecast_value)
 

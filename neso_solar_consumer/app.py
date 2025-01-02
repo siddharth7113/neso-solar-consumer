@@ -30,7 +30,11 @@ def get_forecast():
     """
     resource_id = "example_resource_id"  # Replace with the actual resource ID.
     limit = 100  # Number of records to fetch.
-    columns = ["DATE_GMT", "TIME_GMT", "EMBEDDED_SOLAR_FORECAST"]  # Relevant columns to extract.
+    columns = [
+        "DATE_GMT",
+        "TIME_GMT",
+        "EMBEDDED_SOLAR_FORECAST",
+    ]  # Relevant columns to extract.
     rename_columns = {
         "DATE_GMT": "start_utc",
         "TIME_GMT": "end_utc",
