@@ -6,10 +6,15 @@ build-backend = "setuptools.build_meta"
 name = "neso_solar_consumer"
 version = "0.1"
 dependencies = [
-    "pandas","sqlalchemy","nowcasting_datamodel","testcontainers"
+    "pandas",
+    "sqlalchemy",
+    "nowcasting_datamodel==1.5.56",
+    "testcontainers"
 ]
 
 [project.optional-dependencies]
 dev = [
-    "pytest","black","ruff"
+    "pytest",
+    "black",
+    "ruff"
 ]
