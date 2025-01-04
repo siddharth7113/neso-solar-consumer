@@ -53,8 +53,10 @@ def test_real_forecasts(db_session, test_config):
     for forecast in forecasts:
         print(f"ForecastSQL Object: {forecast}")
         for value in forecast.forecast_values:
-            print(f"  target_time: {value.target_time}, "
-                  f"expected_power_generation: {value.expected_power_generation_megawatts}")
+            print(
+                f"  target_time: {value.target_time}, "
+                f"expected_power_generation: {value.expected_power_generation_megawatts}"
+            )
 
     # Step 3: Save forecasts to the database
     save_forecasts_to_db(forecasts=forecasts, session=db_session)
@@ -62,7 +64,9 @@ def test_real_forecasts(db_session, test_config):
     # Step 4: Verify forecasts were saved correctly
     saved_forecast = db_session.query(ForecastSQL).first()
     assert saved_forecast is not None, "No forecast was saved to the database!"
-    assert saved_forecast.model.name == test_config["model_name"], "Model name mismatch!"
+    assert (
+        saved_forecast.model.name == test_config["model_name"]
+    ), "Model name mismatch!"
     assert len(saved_forecast.forecast_values) > 0, "No forecast values were saved!"
     print("\nSaved ForecastSQL Object Details:")
     print(f"Model: {saved_forecast.model.name}")
