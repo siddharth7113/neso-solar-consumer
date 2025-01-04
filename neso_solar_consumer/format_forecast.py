@@ -1,5 +1,5 @@
 import logging
-from datetime import datetime, timezone
+from datetime import datetime, timezone, time
 import pandas as pd
 from nowcasting_datamodel.models import ForecastSQL, ForecastValue
 from nowcasting_datamodel.read.read import (
@@ -30,17 +30,25 @@ def format_to_forecast_sql(
     # Step 3: Process all rows into ForecastValue objects
     forecast_values = []
     for _, row in data.iterrows():
-        if pd.isnull(row["start_utc"]) or pd.isnull(row["solar_forecast_kw"]):
+        if (
+            pd.isnull(row["start_utc"])
+            or pd.isnull(row["solar_forecast_kw"])
+            or pd.isnull(row["end_utc"])
+        ):
             logger.warning(f"Skipping row due to missing data: {row}")
             continue
 
         try:
-            target_time = datetime.fromisoformat(row["start_utc"]).replace(
+            # Extract date from start_utc and combine with time from end_utc
+            date_part = datetime.fromisoformat(row["start_utc"]).date()
+            time_parts = list(map(int, row["end_utc"].split(":")))
+            target_time = datetime.combine(date_part, time(*time_parts)).replace(
                 tzinfo=timezone.utc
             )
-        except ValueError:
+            logger.info(f"Derived target_time: {target_time}")
+        except (ValueError, IndexError) as e:
             logger.warning(
-                f"Invalid datetime format: {row['start_utc']}. Skipping row."
+                f"Invalid datetime format: {row['start_utc']} {row['end_utc']}. Error: {e}. Skipping row."
             )
             continue
 
