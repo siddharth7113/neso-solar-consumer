@@ -30,4 +30,4 @@ def save_forecasts_to_db(forecasts: list, session: Session):
         logger.info(f"Successfully saved {len(forecasts)} forecasts to the database.")
     except Exception as e:
         logger.error(f"An error occurred while saving forecasts: {e}")
-        raise
+        raise e
