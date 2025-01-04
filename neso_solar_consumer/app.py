@@ -2,22 +2,17 @@
 Main Script to Fetch, Format, and Save NESO Solar Forecast Data
 
 This script orchestrates the following steps:
-1. Fetches solar forecast data using the `fetch_data` function from `fetch_data.py`.
+1. Fetches solar forecast data using the `fetch_data` function.
 2. Formats the forecast data into `ForecastSQL` objects using `format_forecast.py`.
 3. Saves the formatted forecasts into the database using `save_forecast.py`.
-
-Functions:
-    - get_forecast: Fetches raw solar forecast data.
-    - format_forecast: Converts raw forecast data into `ForecastSQL` objects.
-    - save_forecast: Saves the formatted forecast data to the database.
 """
 
 import logging
-from sqlalchemy.orm import sessionmaker
-from sqlalchemy import create_engine
 from neso_solar_consumer.fetch_data import fetch_data
 from neso_solar_consumer.format_forecast import format_to_forecast_sql
 from neso_solar_consumer.save_forecast import save_forecasts_to_db
+from nowcasting_datamodel.connection import DatabaseConnection
+from nowcasting_datamodel.models import Base_Forecast
 
 # Configure logging
 logging.basicConfig(
@@ -25,98 +20,84 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-# Database configuration (replace with actual database URL)
-DATABASE_URL = "postgresql://user:password@localhost:5432/forecast_db"
 
-# Create SQLAlchemy session
-engine = create_engine(DATABASE_URL)
-Session = sessionmaker(bind=engine)
-db_session = Session()
-
-
-def get_forecast():
+def app(
+    db_url: str,
+    resource_id: str,
+    limit: int = 100,
+    model_tag: str = "real_data_model",
+    model_version: str = "1.0",
+):
     """
-    Fetch solar forecast data from NESO API.
-
-    Returns:
-        pd.DataFrame: A DataFrame containing solar forecast data.
-    """
-    logger.info("Fetching forecast data...")
-    resource_id = "example_resource_id"  # Replace with the actual resource ID.
-    limit = 100  # Number of records to fetch.
-    columns = [
-        "DATE_GMT",
-        "TIME_GMT",
-        "EMBEDDED_SOLAR_FORECAST",
-    ]  # Relevant columns to extract.
-    rename_columns = {
-        "DATE_GMT": "start_utc",
-        "TIME_GMT": "end_utc",
-        "EMBEDDED_SOLAR_FORECAST": "solar_forecast_kw",
-    }
-    return fetch_data(resource_id, limit, columns, rename_columns)
-
-
-def format_forecast(data, session):
-    """
-    Format solar forecast data into `ForecastSQL` objects.
+    Main application function to fetch, format, and save solar forecast data.
 
     Parameters:
-        data (pd.DataFrame): The raw forecast data fetched from the NESO API.
-        session: SQLAlchemy session for metadata.
-
-    Returns:
-        list: A list of formatted `ForecastSQL` objects.
+        db_url (str): Database connection URL.
+        resource_id (str): Resource ID to fetch data from NESO API.
+        limit (int): Number of records to fetch. Default is 100.
+        model_tag (str): Model name for the forecast. Default is 'real_data_model'.
+        model_version (str): Model version for the forecast. Default is '1.0'.
     """
-    logger.info("Formatting forecast data...")
-    model_tag = "real_data_model"  # Replace with your actual model name.
-    model_version = "1.0"  # Replace with your actual model version.
-    return format_to_forecast_sql(data, model_tag, model_version, session)
+    logger.info("Starting the NESO Solar Forecast pipeline.")
 
+    # Initialize database connection using DatabaseConnection
+    connection = DatabaseConnection(url=db_url, base=Base_Forecast, echo=False)
 
-def save_forecast(forecasts, session):
-    """
-    Save solar forecast data to the database.
-
-    Parameters:
-        forecasts (list): A list of `ForecastSQL` objects to save.
-        session: SQLAlchemy session for database access.
-    """
-    logger.info("Saving forecast data to the database...")
-    save_forecasts_to_db(forecasts, session)
-
-
-def main():
-    """
-    Orchestrates the following steps:
-        1. Fetch forecast data.
-        2. Format forecast data into `ForecastSQL` objects.
-        3. Save forecast data to the database.
-    """
     try:
-        # Step 1: Fetch forecast data
-        forecast_data = get_forecast()
+        with connection.get_session() as session:
+            # Step 1: Fetch forecast data
+            logger.info("Fetching forecast data.")
+            columns = ["DATE_GMT", "TIME_GMT", "EMBEDDED_SOLAR_FORECAST"]
+            rename_columns = {
+                "DATE_GMT": "start_utc",
+                "TIME_GMT": "end_utc",
+                "EMBEDDED_SOLAR_FORECAST": "solar_forecast_kw",
+            }
+            forecast_data = fetch_data(resource_id, limit, columns, rename_columns)
 
-        if forecast_data.empty:
-            logger.warning("No data fetched from NESO API. Exiting.")
-            return
+            if forecast_data.empty:
+                logger.warning("No data fetched. Exiting the pipeline.")
+                return
 
-        # Step 2: Format forecast data
-        forecasts = format_forecast(forecast_data, db_session)
+            # Step 2: Format forecast data
+            logger.info(f"Formatting {len(forecast_data)} rows of forecast data.")
+            forecasts = format_to_forecast_sql(
+                data=forecast_data,
+                model_tag=model_tag,
+                model_version=model_version,
+                session=session,
+            )
 
-        if not forecasts:
-            logger.warning("No forecasts were generated. Exiting.")
-            return
+            if not forecasts:
+                logger.warning("No forecasts generated. Exiting the pipeline.")
+                return
 
-        # Step 3: Save forecast data
-        save_forecast(forecasts, db_session)
+            logger.info(f"Generated {len(forecasts)} ForecastSQL objects.")
 
-        logger.info("Process completed successfully!")
+            # Step 3: Save forecasts to the database
+            logger.info("Saving forecasts to the database.")
+            save_forecasts_to_db(forecasts, session)
+
+            logger.info("Forecast pipeline completed successfully.")
     except Exception as e:
-        logger.error(f"An error occurred during the process: {e}")
-    finally:
-        db_session.close()
+        logger.error(f"Error in the forecast pipeline: {e}")
+        raise
 
 
 if __name__ == "__main__":
-    main()
+    import os
+
+    # Example configurations (can be replaced with user inputs or external configs)
+    DATABASE_URL = "db_url"
+    RESOURCE_ID = "example_resource_id"
+    LIMIT = 100
+    MODEL_TAG = "real_data_model"
+    MODEL_VERSION = "1.0"
+
+    app(
+        db_url=DATABASE_URL,
+        resource_id=RESOURCE_ID,
+        limit=LIMIT,
+        model_tag=MODEL_TAG,
+        model_version=MODEL_VERSION,
+    )
