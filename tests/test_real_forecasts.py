@@ -19,7 +19,7 @@ import pytest
 from nowcasting_datamodel.models import ForecastSQL
 from neso_solar_consumer.fetch_data import fetch_data
 from neso_solar_consumer.format_forecast import format_to_forecast_sql
-from neso_solar_consumer.save_forecasts import save_forecasts_to_db
+from neso_solar_consumer.save_forecast import save_forecasts_to_db
 
 
 @pytest.mark.integration
