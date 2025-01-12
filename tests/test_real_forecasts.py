@@ -25,21 +25,18 @@ from neso_solar_consumer.save_forecast import save_forecasts_to_db
 @pytest.mark.integration
 def test_real_forecasts(db_session, test_config):
     """
-    Integration Test: Ensures the full pipeline of fetching, formatting, and saving
-    forecasts works as expected.
+    Integration Test: Validates the full pipeline of fetching, formatting, and saving
+    forecasts.
     """
-    # Step 1: Fetch data
+    # Step 1: Fetch data from the NESO API
     df = fetch_data(
         resource_id=test_config["resource_id"],
         limit=test_config["limit"],
-        columns=test_config["columns"],
-        rename_columns=test_config["rename_columns"],
     )
     assert not df.empty, "fetch_data returned an empty DataFrame!"
-    print("\nFetched Data:")
-    print(df.to_string(index=False))
+    assert set(df.columns) == {"Datetime_GMT", "solar_forecast_kw"}, "Unexpected DataFrame columns!"
 
-    # Step 2: Format data
+    # Step 2: Format the fetched data into ForecastSQL objects
     forecasts = format_to_forecast_sql(
         data=df,
         model_tag=test_config["model_name"],
@@ -47,29 +44,27 @@ def test_real_forecasts(db_session, test_config):
         session=db_session,
     )
     assert forecasts, "No forecasts were generated from the fetched data!"
+    forecast = forecasts[0]
+    assert len(forecast.forecast_values) == len(df), (
+        f"Mismatch in forecast values! Expected {len(df)}, "
+        f"but got {len(forecast.forecast_values)}."
+    )
 
-    # Debug: Display formatted forecast values
-    print("\nFormatted ForecastSQL Objects:")
-    for forecast in forecasts:
-        print(f"ForecastSQL Object: {forecast}")
-        for value in forecast.forecast_values:
-            print(
-                f"  target_time: {value.target_time}, "
-                f"expected_power_generation: {value.expected_power_generation_megawatts}"
-            )
-
-    # Step 3: Save forecasts to the database
+    # Step 3: Save formatted forecasts to the database
     save_forecasts_to_db(forecasts=forecasts, session=db_session)
 
-    # Step 4: Verify forecasts were saved correctly
+    # Step 4: Validate that the forecasts were saved correctly
     saved_forecast = db_session.query(ForecastSQL).first()
     assert saved_forecast is not None, "No forecast was saved to the database!"
-    assert (
-        saved_forecast.model.name == test_config["model_name"]
-    ), "Model name mismatch!"
+    assert saved_forecast.model.name == test_config["model_name"], "Model name mismatch!"
     assert len(saved_forecast.forecast_values) > 0, "No forecast values were saved!"
-    print("\nSaved ForecastSQL Object Details:")
-    print(f"Model: {saved_forecast.model.name}")
-    print(f"Number of Forecast Values: {len(saved_forecast.forecast_values)}")
+
+    # Additional assertions for saved data consistency
+    saved_values = saved_forecast.forecast_values
+    for original_row, saved_value in zip(df.itertuples(), saved_values):
+        assert saved_value.target_time == original_row.Datetime_GMT, "Mismatch in target_time!"
+        assert saved_value.expected_power_generation_megawatts == pytest.approx(
+            original_row.solar_forecast_kw / 1000
+        ), "Mismatch in expected power generation!"
 
     print("\nIntegration test completed successfully.")

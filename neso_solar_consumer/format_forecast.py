@@ -1,5 +1,5 @@
 import logging
-from datetime import datetime, timezone, time
+from datetime import datetime, timezone
 import pandas as pd
 from nowcasting_datamodel.models import ForecastSQL, ForecastValue
 from nowcasting_datamodel.read.read import (
@@ -18,6 +18,18 @@ logger = logging.getLogger(__name__)
 def format_to_forecast_sql(
     data: pd.DataFrame, model_tag: str, model_version: str, session
 ) -> list:
+    """
+    Format solar forecast data into a ForecastSQL object.
+
+    Parameters:
+        data (pd.DataFrame): DataFrame containing `Datetime_GMT` (UTC) and `solar_forecast_kw`.
+        model_tag (str): Model tag to fetch model metadata.
+        model_version (str): Model version to fetch model metadata.
+        session: Database session.
+
+    Returns:
+        list: A list containing a single ForecastSQL object.
+    """
     logger.info("Starting format_to_forecast_sql process...")
 
     # Step 1: Retrieve model metadata
@@ -30,32 +42,16 @@ def format_to_forecast_sql(
     # Step 3: Process all rows into ForecastValue objects
     forecast_values = []
     for _, row in data.iterrows():
-        if (
-            pd.isnull(row["start_utc"])
-            or pd.isnull(row["solar_forecast_kw"])
-            or pd.isnull(row["end_utc"])
-        ):
+        if pd.isnull(row["Datetime_GMT"]) or pd.isnull(row["solar_forecast_kw"]):
             logger.warning(f"Skipping row due to missing data: {row}")
             continue
 
-        try:
-            # Extract date from start_utc and combine with time from end_utc
-            date_part = datetime.fromisoformat(row["start_utc"]).date()
-            time_parts = list(map(int, row["end_utc"].split(":")))
-            target_time = datetime.combine(date_part, time(*time_parts)).replace(
-                tzinfo=timezone.utc
-            )
-            logger.info(f"Derived target_time: {target_time}")
-        except (ValueError, IndexError) as e:
-            logger.warning(
-                f"Invalid datetime format: {row['start_utc']} {row['end_utc']}. Error: {e}. Skipping row."
-            )
-            continue
+        target_time = row["Datetime_GMT"]
 
+        # Create ForecastValue object
         forecast_value = ForecastValue(
             target_time=target_time,
-            expected_power_generation_megawatts=row["solar_forecast_kw"]
-            / 1000,  # Convert to MW
+            expected_power_generation_megawatts=row["solar_forecast_kw"] / 1000,  # Convert to MW
         ).to_orm()
         forecast_values.append(forecast_value)
 
@@ -68,7 +64,7 @@ def format_to_forecast_sql(
         forecast_values=forecast_values,
         historic=False,
     )
-    logger.info(f"Created ForecastSQL object with {len(forecast_values)} values.")
+    logger.info(f"Created ForecastSQL object with {len(forecast_values)} forecast values.")
 
     # Return a single ForecastSQL object in a list
     return [forecast]
