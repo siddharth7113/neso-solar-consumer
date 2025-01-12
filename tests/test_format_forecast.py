@@ -17,7 +17,10 @@ def test_format_to_forecast_sql_real(db_session, test_config):
         test_config["limit"],
     )
     assert not data.empty, "fetch_data returned an empty DataFrame!"
-    assert set(data.columns) == {"Datetime_GMT", "solar_forecast_kw"}, "Unexpected DataFrame columns!"
+    assert set(data.columns) == {
+        "Datetime_GMT",
+        "solar_forecast_kw",
+    }, "Unexpected DataFrame columns!"
 
     # Step 2: Format the data into a ForecastSQL object
     forecasts = format_to_forecast_sql(
@@ -35,7 +38,9 @@ def test_format_to_forecast_sql_real(db_session, test_config):
 
     # Validate individual `ForecastValue` entries
     for fv, (_, row) in zip(forecast.forecast_values, data.iterrows()):
-        assert fv.target_time == row["Datetime_GMT"], f"Mismatch in target_time for row {row}"
+        assert (
+            fv.target_time == row["Datetime_GMT"]
+        ), f"Mismatch in target_time for row {row}"
         expected_power_mw = row["solar_forecast_kw"] / 1000  # Convert kW to MW
         assert fv.expected_power_generation_megawatts == expected_power_mw, (
             f"Mismatch in expected_power_generation_megawatts for row {row}. "

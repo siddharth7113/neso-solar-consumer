@@ -46,7 +46,10 @@ def test_fetch_data_api(test_config):
         test_config["limit"],
     )
     assert not df_api.empty, "fetch_data returned an empty DataFrame!"
-    assert set(df_api.columns) == {"Datetime_GMT", "solar_forecast_kw"}, "Column names do not match the expected structure!"
+    assert set(df_api.columns) == {
+        "Datetime_GMT",
+        "solar_forecast_kw",
+    }, "Column names do not match the expected structure!"
 
 
 def test_fetch_data_sql(test_config):
@@ -67,7 +70,10 @@ def test_fetch_data_sql(test_config):
     )
     df_sql = fetch_data_using_sql(sql_query)
     assert not df_sql.empty, "fetch_data_using_sql returned an empty DataFrame!"
-    assert set(df_sql.columns) == {"Datetime_GMT", "solar_forecast_kw"}, "Column names do not match the expected structure!"
+    assert set(df_sql.columns) == {
+        "Datetime_GMT",
+        "solar_forecast_kw",
+    }, "Column names do not match the expected structure!"
 
 
 def test_data_consistency(test_config):
@@ -90,4 +96,6 @@ def test_data_consistency(test_config):
         test_config["limit"],
     )
     df_sql = fetch_data_using_sql(sql_query)
-    assert df_api.equals(df_sql), "Data from fetch_data and fetch_data_using_sql are inconsistent!"
+    assert df_api.equals(
+        df_sql
+    ), "Data from fetch_data and fetch_data_using_sql are inconsistent!"

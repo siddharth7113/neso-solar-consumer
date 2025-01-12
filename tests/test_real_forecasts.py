@@ -34,7 +34,10 @@ def test_real_forecasts(db_session, test_config):
         limit=test_config["limit"],
     )
     assert not df.empty, "fetch_data returned an empty DataFrame!"
-    assert set(df.columns) == {"Datetime_GMT", "solar_forecast_kw"}, "Unexpected DataFrame columns!"
+    assert set(df.columns) == {
+        "Datetime_GMT",
+        "solar_forecast_kw",
+    }, "Unexpected DataFrame columns!"
 
     # Step 2: Format the fetched data into ForecastSQL objects
     forecasts = format_to_forecast_sql(
@@ -56,13 +59,17 @@ def test_real_forecasts(db_session, test_config):
     # Step 4: Validate that the forecasts were saved correctly
     saved_forecast = db_session.query(ForecastSQL).first()
     assert saved_forecast is not None, "No forecast was saved to the database!"
-    assert saved_forecast.model.name == test_config["model_name"], "Model name mismatch!"
+    assert (
+        saved_forecast.model.name == test_config["model_name"]
+    ), "Model name mismatch!"
     assert len(saved_forecast.forecast_values) > 0, "No forecast values were saved!"
 
     # Additional assertions for saved data consistency
     saved_values = saved_forecast.forecast_values
     for original_row, saved_value in zip(df.itertuples(), saved_values):
-        assert saved_value.target_time == original_row.Datetime_GMT, "Mismatch in target_time!"
+        assert (
+            saved_value.target_time == original_row.Datetime_GMT
+        ), "Mismatch in target_time!"
         assert saved_value.expected_power_generation_megawatts == pytest.approx(
             original_row.solar_forecast_kw / 1000
         ), "Mismatch in expected power generation!"

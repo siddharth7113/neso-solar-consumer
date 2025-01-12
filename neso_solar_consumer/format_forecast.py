@@ -51,7 +51,8 @@ def format_to_forecast_sql(
         # Create ForecastValue object
         forecast_value = ForecastValue(
             target_time=target_time,
-            expected_power_generation_megawatts=row["solar_forecast_kw"] / 1000,  # Convert to MW
+            expected_power_generation_megawatts=row["solar_forecast_kw"]
+            / 1000,  # Convert to MW
         ).to_orm()
         forecast_values.append(forecast_value)
 
@@ -64,7 +65,9 @@ def format_to_forecast_sql(
         forecast_values=forecast_values,
         historic=False,
     )
-    logger.info(f"Created ForecastSQL object with {len(forecast_values)} forecast values.")
+    logger.info(
+        f"Created ForecastSQL object with {len(forecast_values)} forecast values."
+    )
 
     # Return a single ForecastSQL object in a list
     return [forecast]
