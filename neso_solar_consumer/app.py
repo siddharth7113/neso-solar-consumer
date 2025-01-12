@@ -7,12 +7,15 @@ This script orchestrates the following steps:
 3. Saves the formatted forecasts into the database using `save_forecast.py`.
 """
 
+import os
 import logging
 from neso_solar_consumer.fetch_data import fetch_data
 from neso_solar_consumer.format_forecast import format_to_forecast_sql
 from neso_solar_consumer.save_forecast import save_forecasts_to_db
 from nowcasting_datamodel.connection import DatabaseConnection
 from nowcasting_datamodel.models import Base_Forecast
+from neso_solar_consumer import __version__  # Import version from __init__.py
+from neso_solar_consumer.config import Neso
 
 # Configure logging
 logging.basicConfig(
@@ -21,39 +24,28 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
-def app(
-    db_url: str,
-    resource_id: str,
-    limit: int = 100,
-    model_tag: str = "real_data_model",
-    model_version: str = "1.0",
-):
+def app(db_url: str):
     """
     Main application function to fetch, format, and save solar forecast data.
 
     Parameters:
-        db_url (str): Database connection URL.
-        resource_id (str): Resource ID to fetch data from NESO API.
-        limit (int): Number of records to fetch. Default is 100.
-        model_tag (str): Model name for the forecast. Default is 'real_data_model'.
-        model_version (str): Model version for the forecast. Default is '1.0'.
+        db_url (str): Database connection URL from an environment variable.
     """
-    logger.info("Starting the NESO Solar Forecast pipeline.")
+    logger.info(f"Starting the NESO Solar Forecast pipeline (version: {__version__}).")
 
-    # Initialize database connection using DatabaseConnection
+    # Use the `Neso` class for hardcoded configuration
+    resource_id = Neso.RESOURCE_ID
+    limit = Neso.LIMIT
+    model_tag = Neso.MODEL_TAG
+
+    # Initialize database connection
     connection = DatabaseConnection(url=db_url, base=Base_Forecast, echo=False)
 
     try:
         with connection.get_session() as session:
             # Step 1: Fetch forecast data
             logger.info("Fetching forecast data.")
-            columns = ["DATE_GMT", "TIME_GMT", "EMBEDDED_SOLAR_FORECAST"]
-            rename_columns = {
-                "DATE_GMT": "start_utc",
-                "TIME_GMT": "end_utc",
-                "EMBEDDED_SOLAR_FORECAST": "solar_forecast_kw",
-            }
-            forecast_data = fetch_data(resource_id, limit, columns, rename_columns)
+            forecast_data = fetch_data(resource_id, limit)
 
             if forecast_data.empty:
                 logger.warning("No data fetched. Exiting the pipeline.")
@@ -64,7 +56,7 @@ def app(
             forecasts = format_to_forecast_sql(
                 data=forecast_data,
                 model_tag=model_tag,
-                model_version=model_version,
+                model_version=__version__,  # Use the version from __init__.py
                 session=session,
             )
 
@@ -85,19 +77,12 @@ def app(
 
 
 if __name__ == "__main__":
-    import os
+    # Step 1: Fetch the database URL from the environment variable
+    db_url = os.getenv("DATABASE_URL")
 
-    # Example configurations (can be replaced with user inputs or external configs)
-    DATABASE_URL = "db_url"
-    RESOURCE_ID = "example_resource_id"
-    LIMIT = 100
-    MODEL_TAG = "real_data_model"
-    MODEL_VERSION = "1.0"
+    if not db_url:
+        logger.error("DATABASE_URL environment variable is not set. Exiting.")
+        exit(1)
 
-    app(
-        db_url=DATABASE_URL,
-        resource_id=RESOURCE_ID,
-        limit=LIMIT,
-        model_tag=MODEL_TAG,
-        model_version=MODEL_VERSION,
-    )
+    # Step 2: Run the application
+    app(db_url=db_url)
