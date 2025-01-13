@@ -9,12 +9,6 @@ from testcontainers.postgres import PostgresContainer
 # Shared Test Configuration Constants
 RESOURCE_ID = "db6c038f-98af-4570-ab60-24d71ebd0ae5"
 LIMIT = 5
-COLUMNS = ["DATE_GMT", "TIME_GMT", "EMBEDDED_SOLAR_FORECAST"]
-RENAME_COLUMNS = {
-    "DATE_GMT": "start_utc",
-    "TIME_GMT": "end_utc",
-    "EMBEDDED_SOLAR_FORECAST": "solar_forecast_kw",
-}
 MODEL_NAME = "real_data_model"
 MODEL_VERSION = "1.0"
 
@@ -40,8 +34,10 @@ def db_session(postgres_container) -> Generator:
     - Creates a fresh database schema before each test.
     - Adds a dummy ML model for test purposes.
     - Tears down the database session and cleans up resources after each test.
+
     Args:
         postgres_container (str): The dynamic connection URL provided by PostgresContainer.
+
     Returns:
         Generator: A SQLAlchemy session object.
     """
@@ -71,14 +67,13 @@ def db_session(postgres_container) -> Generator:
 def test_config():
     """
     Fixture to provide shared test configuration constants.
+
     Returns:
         dict: A dictionary of test configuration values.
     """
     return {
         "resource_id": RESOURCE_ID,
         "limit": LIMIT,
-        "columns": COLUMNS,
-        "rename_columns": RENAME_COLUMNS,
         "model_name": MODEL_NAME,
         "model_version": MODEL_VERSION,
     }

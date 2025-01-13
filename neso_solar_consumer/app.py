@@ -2,104 +2,87 @@
 Main Script to Fetch, Format, and Save NESO Solar Forecast Data
 
 This script orchestrates the following steps:
-1. Fetches solar forecast data using the `fetch_data` function from `fetch_data.py`.
-2. Formats the forecast data (currently a placeholder for future enhancements).
-3. Saves the forecast data (currently a placeholder for future enhancements).
-
-Functions:
-    - get_forecast: Fetches raw solar forecast data.
-    - format_forecast: Processes the forecast data for a specific format (placeholder for now).
-    - save_forecast: Saves the formatted forecast data (placeholder for now).
+1. Fetches solar forecast data using the `fetch_data` function.
+2. Formats the forecast data into `ForecastSQL` objects using `format_forecast.py`.
+3. Saves the formatted forecasts into the database using `save_forecast.py`.
 """
 
-from .fetch_data import fetch_data
+import os
+import logging
+from neso_solar_consumer.fetch_data import fetch_data
+from neso_solar_consumer.format_forecast import format_to_forecast_sql
+from neso_solar_consumer.save_forecast import save_forecasts_to_db
+from nowcasting_datamodel.connection import DatabaseConnection
+from nowcasting_datamodel.models import Base_Forecast
+from neso_solar_consumer import __version__  # Import version from __init__.py
+from neso_solar_consumer.config import Neso
+
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s"
+)
+logger = logging.getLogger(__name__)
 
 
-def get_forecast():
+def app(db_url: str):
     """
-    Fetch solar forecast data from NESO API.
-
-    This function retrieves the solar forecast data from the NESO API and processes
-    it into a Pandas DataFrame using the `fetch_data` function.
-
-    Returns:
-        pd.DataFrame: A DataFrame containing solar forecast data with the following columns:
-                      - `start_utc`: Start time of the forecast (UTC).
-                      - `end_utc`: End time of the forecast (UTC).
-                      - `solar_forecast_kw`: Forecasted solar energy in kW.
-    """
-    resource_id = "example_resource_id"  # Replace with the actual resource ID.
-    limit = 100  # Number of records to fetch.
-    columns = [
-        "DATE_GMT",
-        "TIME_GMT",
-        "EMBEDDED_SOLAR_FORECAST",
-    ]  # Relevant columns to extract.
-    rename_columns = {
-        "DATE_GMT": "start_utc",
-        "TIME_GMT": "end_utc",
-        "EMBEDDED_SOLAR_FORECAST": "solar_forecast_kw",
-    }
-
-    # Fetch and return data as a DataFrame.
-    return fetch_data(resource_id, limit, columns, rename_columns)
-
-
-def format_forecast(data):
-    """
-    Format solar forecast data.
-
-    Placeholder function for future enhancements. In its current form, it simply logs
-    a message and returns the input data unmodified.
+    Main application function to fetch, format, and save solar forecast data.
 
     Parameters:
-        data (pd.DataFrame): The raw forecast data fetched from the NESO API.
-
-    Returns:
-        pd.DataFrame: The formatted forecast data (currently identical to input data).
+        db_url (str): Database connection URL from an environment variable.
     """
-    print("Formatting forecast data...")
-    return data  # Currently, no modifications are applied.
+    logger.info(f"Starting the NESO Solar Forecast pipeline (version: {__version__}).")
 
+    # Use the `Neso` class for hardcoded configuration
+    resource_id = Neso.RESOURCE_ID
+    limit = Neso.LIMIT
+    model_tag = Neso.MODEL_TAG
 
-def save_forecast(data):
-    """
-    Save solar forecast data.
+    # Initialize database connection
+    connection = DatabaseConnection(url=db_url, base=Base_Forecast, echo=False)
 
-    Placeholder function for future enhancements. In its current form, it logs
-    a message but does not persist data.
+    try:
+        with connection.get_session() as session:
+            # Step 1: Fetch forecast data
+            logger.info("Fetching forecast data.")
+            forecast_data = fetch_data(resource_id, limit)
 
-    Parameters:
-        data (pd.DataFrame): The formatted forecast data to be saved.
+            if forecast_data.empty:
+                logger.warning("No data fetched. Exiting the pipeline.")
+                return
 
-    Returns:
-        None
-    """
-    print("Saving forecast data...")
-    # Future implementation will save data to a database or file.
+            # Step 2: Format forecast data
+            logger.info(f"Formatting {len(forecast_data)} rows of forecast data.")
+            forecasts = format_to_forecast_sql(
+                data=forecast_data,
+                model_tag=model_tag,
+                model_version=__version__,  # Use the version from __init__.py
+                session=session,
+            )
 
+            if not forecasts:
+                logger.warning("No forecasts generated. Exiting the pipeline.")
+                return
 
-def main():
-    """
-    Orchestrates the following steps:
-        1. Fetch forecast data.
-        2. Format forecast data.
-        3. Save forecast data.
-    """
-    # Step 1: Get forecast data
-    print("Fetching forecast data...")
-    forecast_data = get_forecast()
+            logger.info(f"Generated {len(forecasts)} ForecastSQL objects.")
 
-    # Step 2: Format forecast data
-    print("Formatting forecast data...")
-    formatted_data = format_forecast(forecast_data)
+            # Step 3: Save forecasts to the database
+            logger.info("Saving forecasts to the database.")
+            save_forecasts_to_db(forecasts, session)
 
-    # Step 3: Save forecast data
-    print("Saving forecast data...")
-    save_forecast(formatted_data)
-
-    print("Process completed successfully!")
+            logger.info("Forecast pipeline completed successfully.")
+    except Exception as e:
+        logger.error(f"Error in the forecast pipeline: {e}")
+        raise
 
 
 if __name__ == "__main__":
-    main()
+    # Step 1: Fetch the database URL from the environment variable
+    db_url = os.getenv("DATABASE_URL")
+
+    if not db_url:
+        logger.error("DATABASE_URL environment variable is not set. Exiting.")
+        exit(1)
+
+    # Step 2: Run the application
+    app(db_url=db_url)

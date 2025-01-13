@@ -18,6 +18,18 @@ logger = logging.getLogger(__name__)
 def format_to_forecast_sql(
     data: pd.DataFrame, model_tag: str, model_version: str, session
 ) -> list:
+    """
+    Format solar forecast data into a ForecastSQL object.
+
+    Parameters:
+        data (pd.DataFrame): DataFrame containing `Datetime_GMT` (UTC) and `solar_forecast_kw`.
+        model_tag (str): Model tag to fetch model metadata.
+        model_version (str): Model version to fetch model metadata.
+        session: Database session.
+
+    Returns:
+        list: A list containing a single ForecastSQL object.
+    """
     logger.info("Starting format_to_forecast_sql process...")
 
     # Step 1: Retrieve model metadata
@@ -30,20 +42,13 @@ def format_to_forecast_sql(
     # Step 3: Process all rows into ForecastValue objects
     forecast_values = []
     for _, row in data.iterrows():
-        if pd.isnull(row["start_utc"]) or pd.isnull(row["solar_forecast_kw"]):
+        if pd.isnull(row["Datetime_GMT"]) or pd.isnull(row["solar_forecast_kw"]):
             logger.warning(f"Skipping row due to missing data: {row}")
             continue
 
-        try:
-            target_time = datetime.fromisoformat(row["start_utc"]).replace(
-                tzinfo=timezone.utc
-            )
-        except ValueError:
-            logger.warning(
-                f"Invalid datetime format: {row['start_utc']}. Skipping row."
-            )
-            continue
+        target_time = row["Datetime_GMT"]
 
+        # Create ForecastValue object
         forecast_value = ForecastValue(
             target_time=target_time,
             expected_power_generation_megawatts=row["solar_forecast_kw"]
@@ -60,7 +65,9 @@ def format_to_forecast_sql(
         forecast_values=forecast_values,
         historic=False,
     )
-    logger.info(f"Created ForecastSQL object with {len(forecast_values)} values.")
+    logger.info(
+        f"Created ForecastSQL object with {len(forecast_values)} forecast values."
+    )
 
     # Return a single ForecastSQL object in a list
     return [forecast]
